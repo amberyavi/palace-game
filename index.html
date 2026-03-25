@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>还珠·宫女求生模拟器</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
+
+  :root {
+    --red: #8B1A1A;
+    --gold: #C9A84C;
+    --dark: #1a0a00;
+    --bg: #2a0a0a;
+    --panel: rgba(30,10,5,0.92);
+    --border: #7a4a1a;
+    --text: #f0ddb0;
+    --text2: #c8a870;
+    --green: #2e6b2e;
+    --blue: #1a3a6b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Serif SC', 'SimSun', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at top, #3d0a0a 0%, #1a0500 60%),
+      repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(120,60,0,0.04) 40px, rgba(120,60,0,0.04) 80px);
+  }
+
+  /* ===== 标题页 ===== */
+  #screen-title {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; text-align: center; padding: 20px;
+  }
+  .title-deco { color: var(--gold); font-size: 1.1rem; letter-spacing: 8px; margin-bottom: 10px; opacity: 0.8; }
+  .game-title { font-size: clamp(2rem, 6vw, 3.8rem); color: var(--gold); text-shadow: 0 0 30px rgba(201,168,76,0.6), 0 2px 4px #000; letter-spacing: 4px; line-height: 1.3; }
+  .game-subtitle { font-size: clamp(0.9rem, 2vw, 1.1rem); color: var(--text2); margin: 15px 0 40px; letter-spacing: 2px; }
+  .title-desc { color: var(--text2); font-size: 0.95rem; line-height: 2; max-width: 500px; border: 1px solid var(--border); padding: 20px 30px; margin-bottom: 40px; background: rgba(0,0,0,0.3); border-radius: 4px; }
+  .btn-primary {
+    background: linear-gradient(135deg, #7a1a1a, #c0392b);
+    border: 2px solid var(--gold); color: var(--gold);
+    padding: 14px 50px; font-size: 1.1rem; font-family: inherit;
+    cursor: pointer; letter-spacing: 4px; border-radius: 3px;
+    transition: all 0.3s; text-shadow: 0 1px 2px #000;
+    box-shadow: 0 4px 20px rgba(139,26,26,0.5);
+  }
+  .btn-primary:hover { background: linear-gradient(135deg, #a0201e, #e74c3c); transform: translateY(-2px); box-shadow: 0 6px 25px rgba(139,26,26,0.7); }
+
+  /* ===== 角色创建 ===== */
+  #screen-create {
+    display: none; padding: 20px; max-width: 900px; margin: 0 auto;
+  }
+  .section-title {
+    font-size: 1.4rem; color: var(--gold); text-align: center; margin: 25px 0 15px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    letter-spacing: 3px;
+  }
+  .points-bar {
+    text-align: center; font-size: 1.1rem; color: var(--gold);
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+    padding: 10px; border-radius: 4px; margin-bottom: 20px; letter-spacing: 2px;
+  }
+  #remaining-points { font-size: 1.5rem; font-weight: bold; color: #e74c3c; }
+
+  .option-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .option-card {
+    border: 1px solid var(--border); padding: 12px; border-radius: 4px;
+    background: var(--panel); cursor: pointer; transition: all 0.25s;
+    position: relative;
+  }
+  .option-card:hover { border-color: var(--gold); background: rgba(50,20,5,0.95); }
+  .option-card.selected { border-color: var(--gold); background: rgba(80,30,5,0.95); box-shadow: 0 0 12px rgba(201,168,76,0.3); }
+  .option-card.disabled { opacity: 0.4; cursor: not-allowed; }
+  .option-name { font-size: 1rem; color: var(--gold); margin-bottom: 5px; }
+  .option-cost { font-size: 0.78rem; color: #e74c3c; margin-bottom: 5px; }
+  .option-desc { font-size: 0.8rem; color: var(--text2); line-height: 1.5; }
+  .option-effect { font-size: 0.75rem; color: #7fcf7f; margin-top: 5px; }
+
+  .name-input-area { text-align: center; margin: 20px 0; }
+  .name-input-area label { display: block; color: var(--text2); margin-bottom: 8px; font-size: 0.95rem; }
+  .name-input-area input {
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 15px; font-size: 1rem;
+    font-family: inherit; border-radius: 3px; width: 200px; text-align: center;
+  }
+  .origin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+
+  /* ===== 主游戏界面 ===== */
+  #screen-game {
+    display: none; min-height: 100vh;
+    display: none; flex-direction: column;
+  }
+  .game-header {
+    background: rgba(0,0,0,0.6); border-bottom: 1px solid var(--border);
+    padding: 10px 20px; display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .game-header .title { color: var(--gold); font-size: 1rem; letter-spacing: 2px; }
+  .game-header .day-info { color: var(--text2); font-size: 0.9rem; }
+
+  .game-body { display: flex; flex: 1; min-height: 0; }
+
+  /* 左侧面板 */
+  .left-panel {
+    width: 230px; min-width: 180px; background: var(--panel);
+    border-right: 1px solid var(--border); padding: 12px; overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .stat-section-title { color: var(--gold); font-size: 0.8rem; letter-spacing: 2px; margin: 12px 0 6px; opacity: 0.8; }
+  .stat-row { margin-bottom: 8px; }
+  .stat-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text2); margin-bottom: 3px; }
+  .stat-val { font-weight: bold; }
+  .stat-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+  .stat-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .bar-hp { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+  .bar-mood { background: linear-gradient(90deg, #f39c12, #e67e22); }
+  .bar-show { background: linear-gradient(90deg, #9b59b6, #8e44ad); }
+  .bar-favor { background: linear-gradient(90deg, #f1c40f, #f39c12); }
+  .bar-hatred { background: linear-gradient(90deg, #c0392b, #7b241c); }
+  .bar-moral { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+  .bar-gold { background: linear-gradient(90deg, #d4ac0d, #f9e79f); }
+  .bar-network { background: linear-gradient(90deg, #2980b9, #3498db); }
+  .bar-secret { background: linear-gradient(90deg, #2c3e50, #7f8c8d); }
+
+  .stat-warning { color: #e74c3c; font-size: 0.7rem; animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .npc-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; margin-bottom: 5px; }
+  .npc-name { color: var(--text2); }
+  .npc-hearts { color: var(--gold); font-size: 0.7rem; }
+
+  .status-tags { margin-top: 5px; }
+  .status-tag {
+    display: inline-block; font-size: 0.68rem; padding: 2px 6px;
+    border-radius: 2px; margin: 2px; border: 1px solid;
+  }
+  .tag-danger { color: #e74c3c; border-color: #e74c3c; background: rgba(231,76,60,0.1); }
+  .tag-good { color: #27ae60; border-color: #27ae60; background: rgba(39,174,96,0.1); }
+  .tag-warn { color: #f39c12; border-color: #f39c12; background: rgba(243,156,18,0.1); }
+
+  /* 主内容区 */
+  .main-area { flex: 1; display: flex; flex-direction: column; padding: 15px; overflow-y: auto; }
+  .event-card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 6px; padding: 20px 25px; margin-bottom: 15px;
+    flex: 1;
+  }
+  .event-type-tag { font-size: 0.72rem; color: var(--text2); letter-spacing: 2px; margin-bottom: 8px; }
+  .event-title { font-size: 1.25rem; color: var(--gold); margin-bottom: 12px; letter-spacing: 1px; }
+  .event-text { font-size: 0.92rem; line-height: 2; color: var(--text); white-space: pre-wrap; }
+  .event-hint { font-size: 0.8rem; color: #7fcf7f; margin-top: 10px; font-style: italic; }
+
+  .choices-area { display: grid; gap: 10px; margin-top: 5px; }
+  .choice-btn {
+    background: rgba(30,10,5,0.8); border: 1px solid var(--border);
+    color: var(--text); padding: 12px 16px; text-align: left;
+    font-family: inherit; font-size: 0.88rem; cursor: pointer;
+    border-radius: 4px; transition: all 0.2s; line-height: 1.6;
+  }
+  .choice-btn:hover { border-color: var(--gold); background: rgba(70,25,5,0.9); color: var(--gold); }
+  .choice-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+  .choice-btn.disabled:hover { border-color: var(--border); background: rgba(30,10,5,0.8); color: var(--text); }
+  .choice-req { font-size: 0.73rem; color: #e67e22; display: block; margin-top: 3px; }
+
+  .result-card {
+    background: rgba(10,30,10,0.5); border: 1px solid #2e6b2e;
+    border-radius: 6px; padding: 15px 20px; margin-bottom: 15px;
+  }
+  .result-title { color: #7fcf7f; font-size: 1rem; margin-bottom: 8px; }
+  .result-text { font-size: 0.88rem; line-height: 1.9; color: var(--text); white-space: pre-wrap; }
+  .result-effects { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .effect-tag {
+    font-size: 0.75rem; padding: 2px 8px; border-radius: 2px; border: 1px solid;
+  }
+  .effect-pos { color: #7fcf7f; border-color: #7fcf7f; background: rgba(39,174,96,0.1); }
+  .effect-neg { color: #e74c3c; border-color: #e74c3c; background: rgba(231,76,60,0.1); }
+
+  .continue-btn {
+    background: linear-gradient(135deg, #5a1a0a, #8B1A1A);
+    border: 1px solid var(--gold); color: var(--gold);
+    padding: 10px 30px; font-family: inherit; font-size: 0.95rem;
+    cursor: pointer; border-radius: 3px; letter-spacing: 2px;
+    transition: all 0.2s; margin-top: 10px;
+  }
+  .continue-btn:hover { background: linear-gradient(135deg, #7a201a, #a02020); }
+
+  /* 日志滚动 */
+  .log-area {
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(122,74,26,0.3);
+    border-radius: 4px; padding: 10px 15px; font-size: 0.78rem;
+    color: var(--text2); max-height: 100px; overflow-y: auto;
+    margin-top: 10px; line-height: 1.8;
+  }
+
+  /* ===== 结局页面 ===== */
+  #screen-ending {
+    display: none; min-height: 100vh;
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 20px; text-align: center;
+  }
+  .ending-type { font-size: 0.9rem; color: var(--text2); letter-spacing: 4px; margin-bottom: 15px; }
+  .ending-title { font-size: clamp(1.8rem, 5vw, 3rem); color: var(--gold); margin-bottom: 25px; letter-spacing: 3px; }
+  .ending-desc { max-width: 600px; font-size: 0.95rem; line-height: 2.2; color: var(--text); margin-bottom: 30px; white-space: pre-wrap; }
+  .ending-stats { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 30px; }
+  .ending-stat { background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 8px 15px; border-radius: 4px; font-size: 0.82rem; color: var(--text2); }
+
+  /* 特效 */
+  .shake { animation: shake 0.3s ease-in-out; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+  .danger-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    border: 4px solid rgba(231,76,60,0);
+    pointer-events: none; transition: border-color 0.5s; z-index: 999;
+  }
+  .danger-overlay.active { border-color: rgba(231,76,60,0.5); box-shadow: inset 0 0 60px rgba(231,76,60,0.2); }
+
+  /* 响应式 */
+  @media(max-width:600px) {
+    .game-body { flex-direction: column; }
+    .left-panel { width: 100%; min-height: unset; border-right: none; border-bottom: 1px solid var(--border); }
+    .option-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="danger-overlay" id="dangerOverlay"></div>
+
+<!-- ===== 标题页 ===== -->
+<div id="screen-title">
+  <div class="title-deco">✦ 大清紫禁城出品 ✦</div>
+  <h1 class="game-title">还珠·宫女求生模拟器</h1>
+  <p class="game-subtitle">——三十日宫斗生存手册——</p>
+  <div class="title-desc">
+    乾隆年间，小燕子闯入紫禁城，宫里乱成一锅粥。<br>
+    你是一名普通宫女，没有背景，没有靠山。<br>
+    <br>
+    目标：在这30天的宫廷大乱斗中<strong style="color:var(--gold)">活下去</strong>。<br>
+    <br>
+    皇后很危险，皇上很神秘，<br>
+    小燕子是行走的天灾，容嬷嬷手里有针。<br>
+    <br>
+    <span style="font-size:0.82rem;color:#888">（如有雷同，本宫先磕头赔罪）</span>
+  </div>
+  <button class="btn-primary" onclick="showCreate()">入宫 →</button>
+</div>
+
+<!-- ===== 角色创建 ===== -->
+<div id="screen-create">
+  <h2 class="section-title" style="font-size:1.6rem;margin-top:10px">角色创建</h2>
+
+  <div class="name-input-area">
+    <label>你的名字（宫中称呼）：</label>
+    <input type="text" id="playerName" placeholder="秋月" maxlength="6">
+  </div>
+
+  <div class="points-bar">
+    命点余额：<span id="remaining-points">20</span> 点
+    <span style="font-size:0.8rem;color:#888;margin-left:10px">（未用完可换银两：1点=10两）</span>
+  </div>
+
+  <div class="section-title">出身背景（二选一，免费）</div>
+  <div class="origin-grid" id="origin-area"></div>
+
+  <div class="section-title">容貌</div>
+  <div class="option-grid" id="appearance-area"></div>
+
+  <div class="section-title">性格（可选2~3个，每个2点）</div>
+  <div class="option-grid" id="trait-area"></div>
+
+  <div class="section-title">技能（按需选取）</div>
+  <div class="option-grid" id="skill-area"></div>
+
+  <div class="section-title">特殊背景（选0~1个，3~5点）</div>
+  <div class="option-grid" id="background-area"></div>
+
+  <div style="text-align:center;margin:30px 0">
+    <button class="btn-primary" onclick="startGame()">进宫！</button>
+  </div>
+</div>
+
+<!-- ===== 主游戏 ===== -->
+<div id="screen-game" style="display:none">
+  <div class="game-header">
+    <div class="title">还珠·宫女求生模拟器</div>
+    <div class="day-info" id="dayInfo">第1天·卯时</div>
+  </div>
+  <div class="game-body">
+    <div class="left-panel">
+      <div class="stat-section-title">── 自身状态 ──</div>
+      <div id="stats-panel"></div>
+      <div class="stat-section-title">── NPC关系 ──</div>
+      <div id="npc-panel"></div>
+      <div class="stat-section-title">── 当前状态 ──</div>
+      <div class="status-tags" id="status-tags"></div>
+    </div>
+    <div class="main-area">
+      <div class="event-card" id="event-card">
+        <div class="event-type-tag" id="event-type">【日常事件】</div>
+        <div class="event-title" id="event-title">载入中…</div>
+        <div class="event-text" id="event-text"></div>
+        <div class="event-hint" id="event-hint"></div>
+      </div>
+      <div id="result-area"></div>
+      <div class="choices-area" id="choices-area"></div>
+      <div class="log-area" id="log-area">今日宫廷记事：</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 结局 ===== -->
+<div id="screen-ending">
+  <div class="ending-type" id="ending-type">【游戏结束】</div>
+  <div class="ending-title" id="ending-title">结局名</div>
+  <div class="ending-desc" id="ending-desc"></div>
+  <div class="ending-stats" id="ending-stats"></div>
+  <button class="btn-primary" onclick="restartGame()">重新入宫</button>
+</div>
+
+<script>
+// ========== 游戏数据 ==========
+
+const ORIGINS = [
+  { id:'han', name:'汉人包衣之女', desc:'初始"宫廷知识"+1，旗人NPC好感-5', effect:{ skills:{ court:1 }, npc:{ renmao:-5 } } },
+  { id:'man', name:'满洲小旗之女', desc:'旗人NPC好感+5，骑射技能解锁', effect:{ npc:{ general:5 }, skills:{ riding:1 } } }
+];
+
+const APPEARANCES = [
+  { id:1, name:'路人甲', cost:0, desc:'皇上不会多看你一眼（安全）', effect:{} },
+  { id:2, name:'清秀可人', cost:1, desc:'部分NPC好感+5，偶尔被多看一眼', effect:{ npc:{ minor:5 } } },
+  { id:3, name:'明眸皓齿', cost:2, desc:'皇上随机好感+5，皇后厌恶+5', effect:{ favor:5, hatred:5 } },
+  { id:4, name:'倾城之姿', cost:3, desc:'皇上好感+10，皇后目标标记+15', effect:{ favor:10, hatred:15 } },
+  { id:5, name:'国色天香', cost:5, desc:'皇上特殊事件解锁，皇后会主动针对你', effect:{ favor:20, hatred:30 } },
+];
+
+const TRAITS = [
+  { id:'careful', name:'谨小慎微', cost:2, desc:'张扬值每日自然下降+50%，但难以结交高位NPC', effect:{ show:-5 } },
+  { id:'sociable', name:'八面玲珑', cost:2, desc:'所有NPC好感获取+10%，但忠诚度有上限', effect:{} },
+  { id:'naive', name:'天真烂漫', cost:2, desc:'与小燕子好感+15，皇上随机好感+5', effect:{ xiaoyan:15, favor:5 } },
+  { id:'scheming', name:'工于心计', cost:2, desc:'解锁阴谋类选项，皇后好感+5（但被揭穿惩罚翻倍）', effect:{ empress:5 } },
+  { id:'brave', name:'侠肝义胆', cost:2, desc:'救助事件概率+30%，道德值上限+20', effect:{ moral:10 } },
+  { id:'foodie', name:'吃货本性', cost:2, desc:'御膳房好感+30，通过食物解锁特殊事件', effect:{ kitchen:30 } },
+  { id:'talented', name:'才华横溢', cost:2, desc:'才艺事件成功率+40%，解锁文化好感线', effect:{} },
+  { id:'coward', name:'胆小如鼠', cost:2, desc:'避免高风险事件，但大多逆袭结局被封锁', effect:{ show:-10 } },
+  { id:'drama', name:'戏精附体', cost:2, desc:'表演技能+50%，假哭真哭自由切换', effect:{} },
+];
+
+const SKILLS = [
+  { id:'court', name:'宫廷礼仪', cost:1, desc:'避免失礼惩罚，贵人好感+5', effect:{ hatred:-5 } },
+  { id:'sewing', name:'针线女红', cost:1, desc:'可为贵人制衣，解锁特殊好感事件', effect:{} },
+  { id:'reading', name:'识字读书', cost:1, desc:'解锁更多事件选项，可读密信', effect:{} },
+  { id:'medical', name:'医药知识', cost:2, desc:'识别毒药草药，自我疗伤，解锁医女副业', effect:{} },
+  { id:'cooking', name:'厨艺精湛', cost:2, desc:'制作食物道具，御膳房事件解锁', effect:{} },
+  { id:'running', name:'奔跑逃跑', cost:1, desc:'逃跑选项成功率+40%', effect:{} },
+  { id:'observe', name:'察言观色', cost:2, desc:'每日获取NPC情绪提示，减少误判', effect:{} },
+  { id:'martial', name:'功夫傍身', cost:3, desc:'解锁武力反抗选项，自保+30%', effect:{} },
+  { id:'art', name:'唱戏吹牛', cost:1, desc:'娱乐事件成功率+30%，皇上娱乐好感+10', effect:{ favor:5 } },
+  { id:'finance', name:'理财算账', cost:1, desc:'银两收入+20%，识别贿赂陷阱', effect:{} },
+];
+
+const BACKGROUNDS = [
+  { id:'xiaoyan_friend', name:'与某格格有旧', cost:3, desc:'与小燕子初始关系+30，解锁特殊剧情', effect:{ xiaoyan:30 }, risk:'小燕子的朋友=皇后的敌人（皇后厌恶+10）' },
+  { id:'scholar', name:'书香门第之后', cost:3, desc:'皇上文化好感线解锁，才艺事件+20%成功率', effect:{ favor:8 }, risk:'皇后认为读书人更会撒谎' },
+  { id:'eunuch_old', name:'曾救过某太监', cost:3, desc:'小李子好感+50，获得宫廷情报网', effect:{ xiaolizi:50 }, risk:'太监的秘密知道太多有时候是祸' },
+  { id:'prophet', name:'民间异能者', cost:5, desc:'每3天可预览一个事件（预言能力）', effect:{}, risk:'皇后怀疑你会妖术（厌恶+15）' },
+  { id:'noble', name:'失散贵族之后', cost:5, desc:'隐藏身份，部分权贵神秘好感+20', effect:{ network:20 }, risk:'被政敌查出来=直接处死' },
+];
+
+// ===== 事件库 =====
+const EVENTS = [
+
+  // 第1天特殊欢迎事件
+  {
+    id:'welcome', day:1, type:'special', title:'入宫第一天',
+    text:`今天是你入宫的第一天。
+
+宫门缓缓打开，朱红色的廊柱延伸到看不见尽头，地上的金砖冷冰冰的，映出你忐忑的脸。
+
+一个尖着嗓子的嬷嬷扫视了你们这批新宫女一眼，皮笑肉不笑地说：
+"规矩第一条——皇后娘娘的猫比你们值钱。"
+
+另一个宫女偷偷戳了戳你，小声说：
+"姐姐，听说最近宫里进了个格格，可了不得，把皇后气得要命……"`,
+    hint:'提示：你的选择将奠定你在宫中的第一印象。',
+    choices:[
+      { id:'a', text:'认真记下这条规矩，表情肃穆', effects:{ hatred:-3, court_bonus:1 }, result:'你把那句话刻进了脑子里。嬷嬷扫视时，目光在你身上停了一秒，似乎满意地移开了。\n（皇后厌恶-3，初始好印象✓）' },
+      { id:'b', text:'悄悄问那个宫女更多关于那位格格的消息', effects:{ xiaoyan:5, show:5 }, result:'宫女叽叽喳喳讲了一堆。你才知道那位格格叫小燕子，据说昨天还把御花园的假山推倒了一座。\n（小燕子相关信息+1，张扬+5）' },
+      { id:'c', text:'低头不语，做好透明人', effects:{ show:-5, mood:-3 }, result:'你成功地让所有人忽视了你的存在，包括那位嬷嬷。\n安全，但有点孤独。\n（张扬-5，心情-3）' },
+    ]
+  },
+
+  // 日常随机事件池
+  {
+    id:'cat_event', type:'daily', title:'御花园的猫',
+    text:`皇后的波斯猫"如意"不知怎么溜进了御花园，正在扑蝴蝶，完全不理人。
+
+皇后派来找猫的宫女面如死灰，都快哭了。
+
+如意踩过了三株名贵牡丹，目前正在考虑要不要踩第四株。`,
+    choices:[
+      { id:'a', text:'帮忙追猫', effects:{ empress:15, hp:-5, show:5 }, successRate:0.55, result_success:'你追着那只猫在花园跑了七八圈，终于在它准备爬树的时候抱住了它。猫抓了你两道，但你成功了。那个宫女感激涕零地把猫抱走了。\n（皇后好感+15，HP-5，张扬+5）', result_fail:'你追了半天没追上，反倒被猫抓了一爪，还踩断了一株牡丹苗。嬷嬷来了，一并记了你的名字。\n（HP-10，皇后厌恶+5）' },
+      { id:'b', text:'拿出随身零食引诱猫', requires:{skills:['cooking','foodie']}, effects:{ empress:20, show:3 }, result:'你从袖子里摸出一小块糕点，蹲下来，轻声唤道："如意～来来来～"\n如意歪了歪头，大约是饿了，慢悠悠走过来叼走了糕点。你顺势一把揽住它。\n全场目击者鼓掌。\n（皇后好感+20，张扬+3）' },
+      { id:'c', text:'假装没看见，绕道走', effects:{ mood:3 }, result:'你淡定地拐了个弯，绕开了那个混乱区域。心情不错。\n但路过的容嬷嬷恰好看见了你绕路的背影，皱了皱眉。\n（心情+3，容嬷嬷好感-3）' },
+    ]
+  },
+
+  {
+    id:'gossip_event', type:'daily', title:'今日宫廷八卦',
+    text:`隔壁宫女素儿悄悄凑过来，神神秘秘地说：
+"你听说了吗？听说昨晚御书房的灯亮到了子时，听说皇上在生一个什么人的气……"
+
+她说着说着，嗓门越来越大。
+
+你注意到走廊尽头有个太监在张望。`,
+    choices:[
+      { id:'a', text:'认真听，努力记下所有细节', effects:{ network:5, secret:8 }, result:'你听到了一些似乎很重要的内容，把它记在了心里。\n但那个太监，他好像在盯着你们看。\n（人脉+5，秘密值+8）' },
+      { id:'b', text:'悄悄提醒素儿有人在看', effects:{ network:8, show:-3 }, result:'素儿吓得立刻闭嘴，感激地看了你一眼："姐姐机灵！"那个太监见你们停了，悻悻地走了。\n（人脉+8，张扬-3，素儿好感+10）' },
+      { id:'c', text:'礼貌但坚决地走开', effects:{ secret:-5, mood:-3 }, result:'你知道宫里的八卦就像糖衣毒药——好吃但要命。\n你走开了。素儿在背后有点失望地哼了一声。\n（秘密值-5，心情-3）' },
+    ]
+  },
+
+  {
+    id:'emperor_laundry', type:'daily', title:'皇上突然出现',
+    text:`你正在廊下晾被子，忽然听到一阵脚步声由远及近。
+
+一转头，皇上正带着一队太监朝这边走来。
+
+所有人立刻跪下，但……你的被子正好横在廊道中间。
+
+御驾，被堵住了。`,
+    choices:[
+      { id:'a', text:'飞速爬起来收被子', effects:{ stamina:-15, favor:5, show:10 }, successRate:0.6, result_success:'你以惊人的速度把被子扯下来，团在怀里，再次跪下，不超过十秒。\n皇上停顿了一下，似乎有点想笑。\n（皇上好感+5，张扬+10）', result_fail:'你慌乱中被被子绊了一跤，把被子踩了一脚泥。皇上绕路走了，没有表情。\n（HP-5，张扬+15，尊严-∞）' },
+      { id:'b', text:'跪伏不动，等皇上绕路', effects:{ hatred:-3, favor:-5 }, result:'你规规矩矩地跪着没动。皇上绕了路，什么都没说。\n容嬷嬷事后夸你守礼，但皇上大约不会记得你。\n（皇后厌恶-3，皇上好感-5）' },
+      { id:'c', text:'假装晕过去', requires:{traits:['drama']}, effects:{ favor:12, show:20 }, result:'你表情一松，软倒在地。\n"来人，救她！"\n皇上命人把你抬进偏殿，亲自命太医来看。你在床上感受到了皇恩浩荡。\n（皇上好感+12，张扬+20，解锁特殊对话）' },
+    ]
+  },
+
+  {
+    id:'rongmama_check', type:'daily', title:'容嬷嬷例行检查',
+    text:`容嬷嬷手持细针，面无表情地站在走廊尽头。
+
+她只需要看你一眼，就能判断你今天的行礼标不标准。
+
+"跪安。"她说。
+
+你跪下。膝盖碰到地面发出了响声。
+
+容嬷嬷的眼皮跳了一下。
+
+（这声响，到底算不算失礼，取决于今天容嬷嬷心情好不好。而你根本不知道她心情好不好。）`,
+    choices:[
+      { id:'a', text:'保持姿势，等待判决', effects:{ rongmama_judge: true }, successRate:0.5, result_success:'容嬷嬷看了你半天，收了针，说了一个字："去。"\n你活下来了。\n（容嬷嬷好感+5）', result_fail:'容嬷嬷眯起眼："响声太大，失礼。"\n她手里的针……\n（HP-10，尊严崩塌，容嬷嬷好感-5）' },
+      { id:'b', text:'主动请罪，请容嬷嬷教导', requires:{skills:['court']}, effects:{ rongmama:12 }, result:'你垂头说："嬷嬷，奴婢礼数不周，请嬷嬷指点。"\n容嬷嬷的针停在空中，停了很久。\n"……孺子可教。"\n针收回去了。\n（容嬷嬷好感+12）' },
+      { id:'c', text:'展示一下完美的行礼姿势', requires:{skills:['court','sewing']}, effects:{ rongmama:20, show:-5 }, result:'你深吸一口气，重新站起来，优雅地重行了一礼。膝盖落地无声，姿态端庄。\n容嬷嬷愣了一秒，难得地点了点头。\n（容嬷嬷好感+20，张扬-5）' },
+    ]
+  },
+
+  {
+    id:'lingfei_test', type:'daily', title:'令妃的糕点',
+    text:`一个令妃宫里的宫女，提着一盒精致的糕点来到了你面前。
+
+"令妃娘娘听说姑娘近来辛苦，命奴婢送些糕点来。"
+
+她说完，放下糕点，走了。
+
+没有多余的话。
+
+你盯着那盒糕点。宫里无缘无故的好意，从来不是好意。`,
+    choices:[
+      { id:'a', text:'大方吃掉，感恩戴德', effects:{ lingfei:10, mood:15, secret:5 }, result:'糕点很好吃。枣泥馅的，甜而不腻。\n你吃了两块，心情好了很多。\n第二天，令妃派人问你喜不喜欢，你说喜欢，她点了点头，说了一句意味深长的话："以后，有用得上你的地方。"\n（令妃好感+10，心情+15）' },
+      { id:'b', text:'用医药知识检验是否有毒', requires:{skills:['medical']}, effects:{ lingfei:5, mood:10 }, result:'你悄悄检验了一下。\n没毒。\n你松了口气，但也对令妃的心思有了一些认识——她知道你会检验，所以不会下毒，这只是一次试探。\n（令妃好感+5，心情+10，情报：令妃在考察你）' },
+      { id:'c', text:'原封不动退回去', effects:{ lingfei:-10 }, result:'你让人把糕点原样送了回去，附上一句"谢娘娘美意，奴婢不敢当"。\n令妃收到回礼，什么表情都没有，只是再也没有派人来找过你。\n（令妃好感-10，安全但失去一个盟友）' },
+    ]
+  },
+
+  {
+    id:'xiaoyan_run', type:'daily', title:'小燕子来拉你跑路',
+    text:`小燕子飞奔过来，脚底生风，一把抓住你的手臂：
+
+"姐妹！快跑！我好像……不小心……把皇后御花园的花瓶打碎了三个。"
+
+她说这话的时候，皇后宫里的太监已经在远处高声呼喝："拿住那个——"
+
+时间紧迫，小燕子用充满期待的眼神看着你。`,
+    choices:[
+      { id:'a', text:'拉着她一起跑！', effects:{ xiaoyan:20, show:15, hp:-5 }, successRate:0.65, result_success:'你们跑得飞快，绕过长廊，钻进一间偏僻的储藏室，大气不敢出地藏了半个时辰。\n追来的太监最终放弃了。\n小燕子激动地握住你的手："你是我见过最勇的宫女！"\n（小燕子好感+20，张扬+15）', result_fail:'你跑了没几步，一个没注意撞上了迎面而来的容嬷嬷。\n小燕子早跑没影了。\n就你一个人被逮住了。\n（HP-15，张扬+20，容嬷嬷好感-10，皇后厌恶+10）' },
+      { id:'b', text:'假装不认识她，缓缓移开', effects:{ xiaoyan:-15, moral:-8, mood:-5 }, result:'你慢慢地、自然地、以"我只是在散步"的姿态走开了。\n小燕子愣了一秒，随即自己跑了。\n你那天夜里做梦，梦见她用很失望的眼神看着你。\n（小燕子好感-15，道德-8）' },
+      { id:'c', text:'帮她拖住追来的太监', effects:{ xiaoyan:30, hp:-15, moral:10 }, result:'你深吸一口气，迎着太监走上去："各位公公，这里可是见到了一只大老鼠，吓了奴婢一跳……"\n你扯了足足两刻钟的谎，腿都说软了，才把人哄走。\n小燕子事后找到你，哭着说你是她在宫里最好的朋友。\n（小燕子好感+30，HP-15，道德+10）' },
+    ]
+  },
+
+  {
+    id:'steal_frame', type:'crisis', title:'陷害！',
+    text:`一件价值连城的玉镯失踪了。
+
+管事嬷嬷在搜查所有宫女的住处，人人自危。
+
+随着翻箱倒柜的声音一间间接近，你的心一点点沉下去。
+
+然后，在你的床铺下面，嬷嬷拿出了那只玉镯。
+
+整个房间的宫女都倒吸一口冷气，看向你。
+
+你知道，有人陷害你。`,
+    choices:[
+      { id:'a', text:'矢口否认，大声申诉', effects:{ show:15, hp:-5 }, successRate:0.45, result_success:'你声泪俱下，把自己的行程全部说了出来，有三个宫女为你作证——你根本没有机会靠近玉镯原来的地方。\n管事嬷嬷沉默了很久，最终把玉镯没收，让大家散了。\n（张扬+15，危机解除）', result_fail:'你说了很多，但没有人信。\n"狡辩！"嬷嬷厉声打断了你。\n（HP-20，张扬+15，皇后厌恶+15）' },
+      { id:'b', text:'向小李子行贿，让他帮你洗清嫌疑', requires:{gold:30}, effects:{ gold:-30, secret:10 }, result:'你找到了小李子，悄悄在他手心放了三十两银子。\n小李子掂了掂，笑了笑，第二天，就有人"意外"发现了真正的小偷是另一个宫女。\n（花费30两银子，危机解除，秘密值+10）' },
+      { id:'c', text:'认了，忍下来', effects:{ hp:-10, show:-20, moral:-5, mood:-20 }, result:'你没有争辩，低头认了罚。\n皇后厌恶值小幅下降，因为你"识相"。\n但你的心里，有什么东西悄悄裂开了一条缝。\n（HP-10，心情-20，张扬-20，道德-5）' },
+      { id:'d', text:'当场反将，指出陷害者破绽', requires:{skills:['observe','scheming']}, effects:{ show:20, network:10 }, successRate:0.65, result_success:'你平静地说："嬷嬷，那只玉镯昨晚还在，今早消失的。奴婢昨晚并未回房，而——"你慢慢转过头，看向房间里某个人，"——有人昨晚悄悄进了咱们的屋子。"\n所有人的目光随着你转向了她。\n她的脸色白了。\n（大逆转！张扬+20，人脉+10）', result_fail:'你指出了一个人，但你证据不足，那人当场哭了出来，叫你"栽赃陷害"。\n（局面更乱，HP-10，众人好感-10）' },
+    ]
+  },
+
+  {
+    id:'empress_summon', type:'crisis', title:'皇后召见',
+    text:`皇后突然传唤你。
+
+你独自走进坤宁宫，跪下，感受到上方那道目光如实质般压下来。
+
+皇后坐在凤座上，手里把玩着一串珠子，用一种漫不经心的声音问：
+
+"听说……你最近动作不小？"
+
+寂静。只有宫灯的油噼噼啪啪地响。`,
+    choices:[
+      { id:'a', text:'伏地请罪，说一切都是误会', effects:{ empress:10, show:-10, mood:-10 }, result:'你把头磕得砰砰响，说了很多"奴婢不敢""奴婢惶恐"。\n皇后看了你很久，挥了挥手："下去吧。"\n你出门的时候，后背的衣服都湿了。\n（皇后好感+10，张扬-10）' },
+      { id:'b', text:'表忠心，主动请缨做皇后的耳目', effects:{ empress:25, moral:-15, favor:-5 }, result:'你抬起头，直视皇后，说了一句话："奴婢愿为娘娘分忧。"\n皇后看了你很久，嘴角弯了一下。\n"有意思。"\n（皇后好感+25，道德-15，你成为皇后阵营候选）' },
+      { id:'c', text:'泪流满面，诉说自己有多可怜', requires:{traits:['drama']}, effects:{ empress:8, favor:3, mood:-5 }, result:'你嚎啕大哭，把自己入宫以来的委屈说了个遍，说得声情并茂，真假参半。\n皇后似乎没想到你会这样，愣了片刻，说了句"行了"就让你走了。\n她今天没有对你出手。\n（皇后好感+8，算是过关）' },
+    ]
+  },
+
+  // 第5天：容嬷嬷月例大检
+  {
+    id:'monthly_check', day:5, type:'special', title:'月例礼仪大考',
+    text:`容嬷嬷今天的检查规模比平时大了三倍。
+
+她带着两个助手，挨个检查每一个宫女的站姿、坐姿、行礼姿势、端盘子的方式，甚至包括"低头时眼睛看哪里"。
+
+轮到你了。
+
+容嬷嬷在你面前站定，手里的针在指间轻轻转动，眼神如刀。`,
+    choices:[
+      { id:'a', text:'认认真真展示所有礼仪', requires:{skills:['court']}, effects:{ rongmama:20, hatred:-10 }, result:'你把这几天练的全用上了。容嬷嬷围着你转了一圈，找了半天毛病，最终说了一句"尚可"。\n这是她能给的最高评价。\n（容嬷嬷好感+20，皇后厌恶-10）' },
+      { id:'b', text:'老老实实，尽力表现', effects:{}, successRate:0.6, result_success:'你发挥正常，没出大差错，容嬷嬷扣了你两处小毛病，放你过了。\n（平安通过）', result_fail:'你紧张过度，端盘子的时候手抖了。容嬷嬷的针扎下来了。\n（HP-15，心情-20）' },
+      { id:'c', text:'提前贿赂容嬷嬷的助手', requires:{gold:20}, effects:{ gold:-20, rongmama:5 }, result:'你花了二十两打通了助手，她在关键时刻帮你说了句好话。\n容嬷嬷放你过了，但她眼神里有一丝意味深长。\n（花费20两，安全通过）' },
+    ]
+  },
+
+  // 第10天：小燕子大事故
+  {
+    id:'study_incident', day:10, type:'special', title:'御书房事件',
+    text:`小燕子不知道怎么进了皇上的御书房，把里面翻了个底朝天。
+
+御书房。皇上的私人领地。
+
+她慌慌张张找到你，手上拿着一封明显是机密的奏折，声音都在抖：
+
+"我……我好像……打翻了砚台，墨弄到了几封奏折上，然后我想帮他擦，结果……你能帮我把东西放回去吗？"
+
+她用狗狗眼看着你。`,
+    choices:[
+      { id:'a', text:'帮她悄悄潜入书房复原现场', effects:{ xiaoyan:30, secret:25 }, successRate:0.55, result_success:'你趁着太监换班的空档，和小燕子一起溜进书房。你以惊人的速度把奏折摆回原位，墨迹……已经干了，没法擦，但至少位置对了。\n你们逃出来时，两个人都在发抖。\n（小燕子好感+30，秘密+25，你知道了一个皇家秘密）', result_fail:'你们被发现了。皇上正好回来了。\n皇上站在门口，看着满地狼藉和你们两张脸，深吸一口气。\n"说。"\n（触发皇上质询——HP-20，张扬+30，进入特殊事件链）' },
+      { id:'b', text:'建议她直接去向皇上坦白', effects:{ xiaoyan:-10, moral:10 }, result:'你说："你做的事，要自己负责。去坦白比被人揭发好。"\n小燕子沉默了很久，最终去了。\n皇上出人意料地笑了，说："朕的书房……还好吗？"然后让人去收拾。\n（小燕子好感-10，道德+10，危机转移给小燕子）' },
+      { id:'c', text:'先看看那些奏折写的是什么', effects:{ secret:30, network:15, hatred:10 }, result:'你的眼睛扫过几封奏折的内容——有政事，有密报，有一个名字出现在多封奏折里……\n你把内容记在了心里，然后帮小燕子把东西放回去。\n（秘密+30，获得政治情报，但皇后的眼线似乎看见了你靠近御书房）' },
+    ]
+  },
+
+  // 第15天：扎小人之夜
+  {
+    id:'curse_night', day:15, type:'special', title:'皇后扎小人之夜',
+    text:`今天是月中。宫里流传一个说法，皇后每逢月中，会对她最厌恶的宫女施一个"小小的诅咒"。
+
+宫女们都在私下传，说昨天被皇后盯了一眼的某人，今天莫名其妙扭了脚。
+
+你不知道你是不是在皇后的"名单"上。
+
+今晚，你的手腕上突然出现了一个红点。`,
+    choices:[
+      { id:'a', text:'用医药知识检查这个红点', requires:{skills:['medical']}, effects:{ secret:-5, mood:10 }, result:'你检查了很久，确认这只是一个蚊子咬的包。\n你松了口气，同时感到一阵荒谬。\n（心情+10，但宫廷恐惧症又加重了一点）' },
+      { id:'b', text:'非常恐慌，去求神拜佛', effects:{ mood:-15, rongmama:5 }, result:'你烧了很多香。容嬷嬷碰巧路过，见你在拜佛，罕见地没有苛责，只说了句"信神也不是坏事"。\n（心情-15，容嬷嬷好感+5，红点第二天就消了）' },
+      { id:'c', text:'该干嘛干嘛，不在乎', effects:{ show:-5, mood:5 }, result:'你看了一眼，擦了擦，睡觉了。\n你决定不把自己的情绪交给别人的迷信。\n（心情+5，张扬-5）' },
+    ]
+  },
+
+  // 第18天：宫廷宴会
+  {
+    id:'banquet', day:18, type:'special', title:'七夕宫宴',
+    text:`皇上心情大好，在御花园举办七夕宫宴。
+
+后宫众人盛装出席，歌舞升平，灯火辉煌。
+
+皇上随手点了几名宫女上前表演助兴。
+
+然后……他的手指，指向了你。`,
+    choices:[
+      { id:'a', text:'献上才艺表演（诗词歌赋）', requires:{skills:['art','talented']}, effects:{ favor:20, show:20, mood:10 }, result:'你上前，深吸一口气，把最拿手的节目拿出来了。\n皇上目光亮了一下，鼓掌，说了声"有意思"，赏了一对玉镯。\n（皇上好感+20，张扬+20，获得玉镯道具）' },
+      { id:'b', text:'说自己生病，请求免于表演', effects:{ favor:-5, hatred:-5 }, result:'你说自己头疼，皇上挥挥手让你退下了。\n皇后的目光在你身上停了一秒，似乎在记名字。\n（皇上好感-5，皇后厌恶-5，但安全躲过了）' },
+      { id:'c', text:'即兴说了一个搞笑故事', requires:{traits:['drama','naive']}, effects:{ favor:15, show:15, xiaoyan:10 }, result:'你讲了个关于一只鸭子进宫的故事，荒诞不经，但逻辑自洽。\n皇上笑了，小燕子笑得最大声。\n（皇上好感+15，小燕子好感+10，全场印象分+N）' },
+      { id:'d', text:'发现宴席上有杯酒不对劲', requires:{skills:['medical']}, effects:{ network:20, favor:10 }, result:'你悄悄靠近，用手指蘸了一下，嗅了嗅。\n不对。里面有东西。\n你不动声色地换掉了那杯酒，同时把这件事用眼神告知了令妃。\n令妃微微点头。\n（令妃好感+20，人脉+20，皇上好感+10，解锁令妃情报线）' },
+    ]
+  },
+
+  // 第22天：宫廷暗流
+  {
+    id:'political_storm', day:22, type:'special', title:'宫廷暗流',
+    text:`一场风波正在悄悄酝酿。
+
+宫里有个宫女被皇后以"行为不端"的名义当众杖责，打得很重。
+
+宫女们都沉默着，没有人敢说话。
+
+那个宫女哭着被拖走了，路过你的时候，她抓住了你的手，无声地看着你。
+
+你认识她——她平时对你不错。`,
+    choices:[
+      { id:'a', text:'俯身扶她，说几句安慰的话', effects:{ moral:10, show:15, mood:-10, network:10 }, result:'你蹲下来扶了她，在她耳边轻声说"撑住"。\n皇后的人冷冷看了你一眼。你感觉到了危险，但你没有松手。\n（道德+10，人脉+10，张扬+15）' },
+      { id:'b', text:'低着头，假装没看见', effects:{ moral:-15, mood:-20, show:-10 }, result:'你移开了视线。\n她的手慢慢松开了。\n你那天夜里久久没有睡着。\n（道德-15，心情-20，你没有被牵连，但你不太喜欢此刻的自己）' },
+      { id:'c', text:'事后悄悄去探望她，送去药品', requires:{skills:['medical']}, effects:{ moral:15, network:15, secret:10 }, result:'你趁夜去看了她，带去了跌打药和安神汤。\n她哭着抓住你的手，"姐姐，我知道了一件事，我只告诉你……"\n（道德+15，人脉+15，获得重要情报，秘密+10）' },
+    ]
+  },
+
+  // 第25天：皇上点名才艺
+  {
+    id:'talent_show', day:25, type:'special', title:'皇上点名考核',
+    text:`皇上突发奇想，要考核宫女的才艺。
+
+"朕的后宫，不能只知道争宠打架，"他说，"要有点文化。"
+
+皇后的眼睛微微眯起来。
+
+点名顺序排到你了。`,
+    choices:[
+      { id:'a', text:'展示诗词才华', requires:{skills:['reading','talented']}, effects:{ favor:15, ziwei:15 }, result:'你背了一首诗，格律工整，意境不俗。\n皇上点头，紫薇格格转过来，惊喜地看着你："姑娘好学问！"\n（皇上好感+15，紫薇好感+15）' },
+      { id:'b', text:'展示女红作品（带了一件绣品）', requires:{skills:['sewing']}, effects:{ favor:10, empress:8 }, result:'你呈上了一幅精心绣制的双面绣，皇上拿着端详了很久。\n"这个……比那些诗词实用。"\n（皇上好感+10，皇后厌恶-8，因为你没有威胁）' },
+      { id:'c', text:'实话实说：奴婢没有特别的才艺', effects:{ favor:-5, mood:-8 }, result:'皇上看了你一眼，说"诚实"，然后去看下一个人了。\n你不知道这是好事还是坏事。\n（皇上好感-5，但皇后对你的注意力降低了）' },
+    ]
+  },
+
+  // 第28天：年度大事故
+  {
+    id:'explosion', day:28, type:'special', title:'御花园大爆炸',
+    text:`轰！
+
+一声巨响从御花园方向传来。
+
+你冲出去，看到皇后精心养了三十年的牡丹花圃，已经变成了一片焦黑。
+
+小燕子站在废墟中央，手上还拿着一根烧完的引线，眼神茫然。
+
+"我……我只是想看看西洋烟火……"
+
+皇后的惨叫声从后面传来，由远及近，声如女鬼。`,
+    choices:[
+      { id:'a', text:'拉着小燕子立刻逃跑', requires:{traits:['naive']}, effects:{ xiaoyan:25, show:20, hp:-10 }, successRate:0.6, result_success:'你们跑了。跑得非常快。\n皇后的追兵在后面一路追，你们绕了紫禁城半圈，最后躲进了御膳房，靠着一缸泡菜坐下来，相对大笑。\n（小燕子好感+25，张扬+20）', result_fail:'被追上了。你和小燕子一起被带到皇后面前。\n皇后的脸色青白，手在抖。\n（HP-25，皇后厌恶+30，触发皇后惩罚事件）' },
+      { id:'b', text:'配合皇后找替罪羊', requires:{traits:['scheming']}, effects:{ empress:20, moral:-20, show:-15 }, result:'你很快找到了一个理由，把责任推到了一个看热闹的宫女身上。\n皇后怒气稍消，打了那个宫女。\n你在她绝望的眼神里，感受到了什么叫政治。\n（皇后好感+20，道德-20，你非常不喜欢刚才的自己）' },
+      { id:'c', text:'请令妃帮忙周旋', requires:{traits:['lingfei_ally']}, effects:{ lingfei:15, favor:10, gold:-20 }, result:'你立刻找到令妃，低声说了情况。\n令妃沉默了三秒，说："二十两，我帮你摆平。"\n你没有讨价还价。\n令妃出面帮小燕子说了情，皇后发了一通火，最终不了了之。\n（令妃好感+15，花费20两，危机解除）' },
+      { id:'d', text:'挺身而出替小燕子求情', effects:{ xiaoyan:35, moral:15, hp:-20, hatred:20 }, result:'你跪在皇后面前，说："娘娘，此事有奴婢一份罪责……"\n皇后的怒火转向了你。\n你挨了一顿重罚，但小燕子哭着扑过来抱住你，说了一句"我这辈子只认你这一个姐妹"。\n（小燕子好感+35，HP-20，皇后厌恶+20，道德+15）' },
+    ]
+  },
+
+  // 更多日常随机事件
+  {
+    id:'emperor_gift', type:'daily', title:'皇上赐下东西',
+    text:`今天皇上批完奏折，心情似乎不错，突然想起来随手赐了些东西给侍候的宫女们。
+
+太监捧着一个托盘，在你面前停下了——
+
+一碗皇上没吃完的燕窝粥，还剩大半碗，已经冷掉了，表面结了一层皮。
+
+"万岁爷赏的，姑娘请用。"太监面无表情地说。`,
+    choices:[
+      { id:'a', text:'感激涕零，当场喝掉', effects:{ favor:8, mood:10, mood_note:'燕窝粥还是好喝的' }, result:'你把那碗黏糊糊的、冷掉的燕窝粥一口气喝完了。\n皇恩浩荡的重量，值这一碗。\n心情+15。因为毕竟是燕窝。\n尊严-5。因为是剩的。' },
+      { id:'b', text:'谢恩领下，找机会再吃', effects:{ favor:5, moral:3 }, result:'你恭敬地接了过来，道了谢，把它拿回去了。\n（皇上好感+5，这碗燕窝今晚就是你的晚饭）' },
+    ]
+  },
+
+  {
+    id:'nighttalk', type:'daily', title:'夜间密谈邀请',
+    text:`隔壁宫女秀儿悄悄叫住你，压低声音说她有件大事要跟你说，但需要你帮她保密。
+
+她的眼睛里有一种东西——可能是恐惧，可能是激动，可能两者都有。`,
+    choices:[
+      { id:'a', text:'答应听', effects:{ secret:10, network:5 }, result:'秀儿告诉你，她无意中看见了一件不该看见的事——皇后宫里某个人，在偷偷往一道御膳里放东西。\n这个消息很重要，也很危险。\n（秘密+10，人脉+5，获得重要情报）' },
+      { id:'b', text:'礼貌拒绝', effects:{ secret:-5 }, result:'你说："秀儿，宫里的事，知道得少些，睡得踏实些。"\n秀儿看了你一眼，没再说话。\n（秘密-5，安全）' },
+      { id:'c', text:'假装答应，转头告诉嬷嬷', effects:{ moral:-15, secret:5, rongmama:8 }, result:'你去告诉了嬷嬷，说秀儿要和你"私下谈话"。\n嬷嬷找了秀儿问话，秀儿吓得哭了。\n她再也没有主动找过你说话。\n（道德-15，你多了一个嬷嬷的好感，少了一个潜在的朋友）' },
+    ]
+  },
+
+  {
+    id:'medicine_find', type:'daily', title:'发现可疑草药',
+    text:`你在宫里的药房旁边经过，无意中看见一个宫女急匆匆地把一小包东西揣进袖子里，神色慌张。
+
+她看见你，僵了一下，然后假装淡定地走了。
+
+你认得那包东西的形状——那不是什么无害的草药。`,
+    choices:[
+      { id:'a', text:'什么都不做，假装没看见', effects:{ secret:-5, moral:-5 }, result:'你没管。也许你判断错了。也许你没有判断错。\n宫里的事，有时候睁一只眼闭一只眼才能活长久。\n（平安，但道德-5）' },
+      { id:'b', text:'悄悄去查这包药是什么', requires:{skills:['medical']}, effects:{ secret:15, network:10 }, result:'你想办法查了一下。\n那是一种让人"莫名忧郁"的药，长期服用会影响心情，但不会要命。\n有人在对某人下慢手。\n（秘密+15，人脉+10，获得关键情报）' },
+      { id:'c', text:'去找小李子确认这件事值不值得管', requires:{gold:15}, effects:{ gold:-15, network:15 }, result:'小李子收了你的钱，告诉你那包药的来源和目标。\n一个令人意外的名字。\n（花费15两，人脉+15，重要情报解锁）' },
+    ]
+  },
+
+];
+
+// ===== 结局配置 =====
+const ENDINGS = {
+  death_empress: { type:'💀 死亡结局', title:'皇后的手段', desc:'皇后终于出手了。\n\n你莫名其妙地病了，病得很蹊跷，太医看了几次都说不出原因。\n三天后，你在睡梦中再也没有醒来。\n\n宫里有人说，皇后最近心情特别好。\n没有人在乎一个宫女的消失。\n\n（皇后厌恶值达到100——本宫早就警告过你了）', color:'#8B1A1A' },
+  death_hp: { type:'💀 死亡结局', title:'宫中无名之墓', desc:'你倒在了宫廷的某个角落。\n\n没有人知道你是谁，没有人在意你的消失。\n宫里每年都有人这样悄悄消失，这是规矩。\n\n（HP归零，宫廷的代价）', color:'#8B1A1A' },
+  mental_break: { type:'💀 死亡结局', title:'心境之殇', desc:'你开始说一些奇怪的话，看见一些奇怪的东西。\n\n大家都说你"疯了"。\n皇后说你冲撞了神明。\n皇上说"处置了吧"。\n\n你在离开紫禁城的那一刻，突然非常清醒地意识到——\n也许你没有疯，是这里的人疯了。\n\n但已经晚了。\n\n（心情值长期为零，宫廷将你磨碎了）', color:'#8B1A1A' },
+  secret_exposed: { type:'💀 死亡结局', title:'秘密的代价', desc:'你藏不住了。\n\n那些你以为埋得很深的秘密，一件件被翻了出来。\n皇上震怒，你的名字从宫廷名册上被划去。\n\n一个曾经认识你的宫女说，你最后的表情，是释然的。\n\n（秘密值达到100，宫廷里没有永远的秘密）', color:'#8B1A1A' },
+  cold_palace: { type:'🏚️ 失败结局', title:'冷宫岁月', desc:'皇上遗忘了你。\n\n你被遣送到冷宫，靠自己种的菜和太监偶尔送来的残羹过活。\n\n春天来了，牡丹开了，你的院子里只有一棵野草。\n但倒也清静。\n\n你在冷宫里活了很多年，比紫禁城里的大多数人都活得更久。\n\n（皇上满意度归零，被宫廷遗忘）', color:'#4a4a4a' },
+  laundry: { type:'🏚️ 失败结局', title:'浣衣局传奇', desc:'你被发配去洗衣服了。\n\n每天从早洗到晚，手都烂了，但你学会了用冷水泡脚和在每一件衣服上绣出微小的表情包。\n\n后来有人说，浣衣局有个宫女，绣的花样非常好，不知是不是真的快乐。\n\n（多次违规累积惩罚，至少还活着）', color:'#4a4a4a' },
+  expelled: { type:'🏚️ 失败结局', title:'出宫回家', desc:'宫里不留病人。\n\n你被认定"身体不适合在宫中服侍"，被打发回家了。\n\n出了宫门的那一刻，你深吸了一口气。\n外面的空气，和里面的，真的不一样。\n\n（长期HP过低，被宫廷淘汰，但也许这才是最好的结局）', color:'#7a6a3a' },
+  normal_survive: { type:'✅ 生存结局', title:'普通宫女', desc:'你活下来了。\n\n三十天，默默无闻，如履薄冰，但你活下来了。\n\n没有飞黄腾达，没有惊天大事，只是活着。\n\n也许这，就是紫禁城里大多数人最真实的命运。\n\n恭喜你，成为了那个"大多数"。', color:'#2e6b2e' },
+  empress_ally: { type:'✅ 荣耀结局', title:'皇后心腹', desc:'你成为了皇后身边最信任的宫女。\n\n你掌握了不少权力，也承担了不少看不见的压力。\n你知道很多秘密，你参与过一些你不太喜欢的事。\n\n但你活得很好，甚至可以说——很安全。\n\n皇后身边的人，没有人敢轻易动。\n\n（加入皇后阵营，忠诚到底）', color:'#8B1A1A' },
+  xiaoyan_sister: { type:'✅ 荣耀结局', title:'混乱姐妹情', desc:'你和小燕子成了过命的交情。\n\n她闯祸，你善后；你出事，她扑来。\n你们一起在紫禁城里制造了数不清的混乱，也一起渡过了数不清的难关。\n\n皇后说你们是她这辈子的噩梦。\n皇上说你们是宫里唯一有趣的人。\n\n你和小燕子相视大笑。\n\n（小燕子好感>80，共渡大难关）', color:'#d4a017' },
+  lingfei_pawn: { type:'✅ 荣耀结局', title:'令妃棋子', desc:'你成为了令妃手里一枚有用的棋子。\n\n她叫你做什么，你做什么。\n她让你去哪，你去哪。\n\n但令妃从不亏待有用的人，你在她的庇护下，走上了一条险峻但通达的路。\n\n多年以后，你终于理解了令妃常说的那句话：\n"在这宫里，有用比善良更重要，但最好两者都有。"\n\n（令妃阵营，令妃好感>80）', color:'#8B008B' },
+  independent: { type:'✅ 荣耀结局', title:'独立的她', desc:'你没有靠任何人。\n\n没有派系，没有靠山，只有自己的眼睛、脑子和腿。\n\n你在夹缝里求生，每一天都走钢丝，但每一天你都是自由的。\n\n出宫的那天，有人问你：宫里最难的是什么？\n你想了想，说："学会不信任任何人，又不失去善意。"\n\n那个人愣了很久。\n\n（未加入任何派系，独立存活）', color:'#1a6b6b' },
+  imperial_favor: { type:'👑 最高结局', title:'晋封贵人', desc:'皇上的一道圣旨，改变了你的一切。\n\n你被晋为贵人。\n\n宫里的每一个人，突然都对你笑了。\n皇后的眼神变了，令妃端着茶来看你，小燕子欢呼雀跃。\n\n你站在新的宫殿里，看着镜子里的自己。\n那个人，和一个月前入宫的那个你，已经不太一样了。\n\n你不确定这是好事，还是坏事。\n但这是你的选择。\n\n（皇上三条好感线全满，至高荣耀与至高危险）', color:'#B8860B' },
+  chaos_god: { type:'🌀 隐藏结局', title:'混沌之神', desc:'你彻底超越了这个宫廷的规则本身。\n\n你离开紫禁城的那天，\n皇后说了一句话——"幸好她走了。"\n皇上叹了口气——"可惜她走了。"\n小燕子嚎啕大哭——"我最好的姐妹走了！"\n令妃只是微微一笑——"终于走了。"\n容嬷嬷沉默了很久，说："……规矩管不住这种人。"\n\n宫廷记事上，你的名字旁边，什么评语都没有。\n只有一个空白。\n\n（达成隐藏结局——所有数值同时极端化）', color:'#4a0a4a' },
+};
+
+// ========== 游戏状态 ==========
+let gs = {}; // game state
+let currentEvent = null;
+let eventPhase = 'show'; // 'show' | 'result'
+let dayEventCount = 0;
+let eventPool = [];
+let usedEvents = new Set();
+let logLines = [];
+let specialDayEvents = {1:'welcome', 5:'monthly_check', 10:'study_incident', 15:'curse_night', 18:'banquet', 22:'political_storm', 25:'talent_show', 28:'explosion'};
+
+// ========== 角色创建逻辑 ==========
+let createState = {
+  points: 20,
+  origin: null,
+  appearance: 1,
+  traits: [],
+  skills: [],
+  background: null,
+};
+
+function showCreate() {
+  document.getElementById('screen-title').style.display = 'none';
+  document.getElementById('screen-create').style.display = 'block';
+  renderCreate();
+}
+
+function renderCreate() {
+  // 出身
+  let originHtml = '';
+  ORIGINS.forEach(o => {
+    const sel = createState.origin === o.id ? 'selected' : '';
+    originHtml += `<div class="option-card ${sel}" onclick="selectOrigin('${o.id}')">
+      <div class="option-name">${o.name}</div>
+      <div class="option-desc">${o.desc}</div>
+    </div>`;
+  });
+  document.getElementById('origin-area').innerHTML = originHtml;
+
+  // 容貌
+  let appHtml = '';
+  APPEARANCES.forEach(a => {
+    const sel = createState.appearance === a.id ? 'selected' : '';
+    const dis = (createState.points < a.cost && createState.appearance !== a.id) ? 'disabled' : '';
+    appHtml += `<div class="option-card ${sel} ${dis}" onclick="selectAppearance(${a.id})">
+      <div class="option-name">${a.name}</div>
+      <div class="option-cost">${a.cost > 0 ? `消耗${a.cost}点` : '免费'}</div>
+      <div class="option-desc">${a.desc}</div>
+    </div>`;
+  });
+  document.getElementById('appearance-area').innerHTML = appHtml;
+
+  // 性格
+  let traitHtml = '';
+  TRAITS.forEach(t => {
+    const sel = createState.traits.includes(t.id) ? 'selected' : '';
+    const maxed = !createState.traits.includes(t.id) && createState.traits.length >= 3;
+    const noPts = !createState.traits.includes(t.id) && createState.points < t.cost;
+    const dis = (maxed || noPts) ? 'disabled' : '';
+    traitHtml += `<div class="option-card ${sel} ${dis}" onclick="toggleTrait('${t.id}')">
+      <div class="option-name">${t.name}</div>
+      <div class="option-cost">消耗${t.cost}点</div>
+      <div class="option-desc">${t.desc}</div>
+    </div>`;
+  });
+  document.getElementById('trait-area').innerHTML = traitHtml;
+
+  // 技能
+  let skillHtml = '';
+  SKILLS.forEach(s => {
+    const sel = createState.skills.includes(s.id) ? 'selected' : '';
+    const dis = (!createState.skills.includes(s.id) && createState.points < s.cost) ? 'disabled' : '';
+    skillHtml += `<div class="option-card ${sel} ${dis}" onclick="toggleSkill('${s.id}')">
+      <div class="option-name">${s.name}</div>
+      <div class="option-cost">消耗${s.cost}点</div>
+      <div class="option-desc">${s.desc}</div>
+    </div>`;
+  });
+  document.getElementById('skill-area').innerHTML = skillHtml;
+
+  // 背景
+  let bgHtml = '';
+  BACKGROUNDS.forEach(b => {
+    const sel = createState.background === b.id ? 'selected' : '';
+    const dis = (createState.background !== b.id && (createState.background !== null || createState.points < b.cost)) ? 'disabled' : '';
+    bgHtml += `<div class="option-card ${sel} ${dis}" onclick="selectBackground('${b.id}')">
+      <div class="option-name">${b.name}</div>
+      <div class="option-cost">消耗${b.cost}点</div>
+      <div class="option-desc">${b.desc}</div>
+      <div style="font-size:0.72rem;color:#e74c3c;margin-top:4px">⚠ ${b.risk}</div>
+    </div>`;
+  });
+  document.getElementById('background-area').innerHTML = bgHtml;
+
+  document.getElementById('remaining-points').textContent = createState.points;
+}
+
+function calcPoints() {
+  let used = 0;
+  const appItem = APPEARANCES.find(a => a.id === createState.appearance);
+  if (appItem) used += appItem.cost;
+  createState.traits.forEach(tid => { const t = TRAITS.find(x=>x.id===tid); if(t) used += t.cost; });
+  createState.skills.forEach(sid => { const s = SKILLS.find(x=>x.id===sid); if(s) used += s.cost; });
+  if (createState.background) { const b = BACKGROUNDS.find(x=>x.id===createState.background); if(b) used += b.cost; }
+  createState.points = 20 - used;
+}
+
+function selectOrigin(id) { createState.origin = id; renderCreate(); }
+function selectAppearance(id) {
+  const a = APPEARANCES.find(x=>x.id===id);
+  const curA = APPEARANCES.find(x=>x.id===createState.appearance);
+  const diff = a.cost - curA.cost;
+  if (diff > createState.points) return;
+  createState.appearance = id; calcPoints(); renderCreate();
+}
+function toggleTrait(id) {
+  if (createState.traits.includes(id)) {
+    createState.traits = createState.traits.filter(x=>x!==id);
+  } else {
+    if (createState.traits.length >= 3) return;
+    const t = TRAITS.find(x=>x.id===id);
+    if (createState.points < t.cost) return;
+    createState.traits.push(id);
+  }
+  calcPoints(); renderCreate();
+}
+function toggleSkill(id) {
+  if (createState.skills.includes(id)) {
+    createState.skills = createState.skills.filter(x=>x!==id);
+  } else {
+    const s = SKILLS.find(x=>x.id===id);
+    if (createState.points < s.cost) return;
+    createState.skills.push(id);
+  }
+  calcPoints(); renderCreate();
+}
+function selectBackground(id) {
+  if (createState.background === id) { createState.background = null; }
+  else {
+    const b = BACKGROUNDS.find(x=>x.id===id);
+    if (createState.points < b.cost) return;
+    createState.background = id;
+  }
+  calcPoints(); renderCreate();
+}
+
+function startGame() {
+  if (!createState.origin) { alert('请选择出身背景！'); return; }
+  const name = document.getElementById('playerName').value.trim() || '秋月';
+  initGameState(name);
+  document.getElementById('screen-create').style.display = 'none';
+  document.getElementById('screen-game').style.display = 'flex';
+  document.getElementById('screen-game').style.flexDirection = 'column';
+  document.getElementById('screen-game').style.minHeight = '100vh';
+  renderStats();
+  loadNextEvent();
+}
+
+// ========== 游戏初始化 ==========
+function initGameState(name) {
+  gs = {
+    name, day: 1, timeSlot: 0, eventsToday: 0,
+    hp: 80, mood: 60, show: 20, favor: 5,
+    hatred: 10, moral: 50, gold: 50,
+    stamina: 70, secret: 0, network: 0,
+    // NPC relations
+    empress: 10, xiaoyan: 10, lingfei: 10,
+    rongmama: 10, xiaolizi: 10, ziwei: 10,
+    // Character
+    origin: createState.origin,
+    appearance: createState.appearance,
+    traits: [...createState.traits],
+    skills: [...createState.skills],
+    background: createState.background,
+    faction: 'independent',
+    statusEffects: [],
+    gameOver: false,
+  };
+
+  // 应用出身效果
+  if (gs.origin === 'man') { gs.network += 5; }
+
+  // 应用容貌效果
+  const appItem = APPEARANCES.find(a => a.id === gs.appearance);
+  if (appItem && appItem.effect) {
+    if (appItem.effect.favor) gs.favor += appItem.effect.favor;
+    if (appItem.effect.hatred) gs.hatred += appItem.effect.hatred;
+  }
+
+  // 应用性格效果
+  gs.traits.forEach(tid => {
+    const t = TRAITS.find(x=>x.id===tid);
+    if (!t || !t.effect) return;
+    if (t.effect.show) gs.show = Math.max(0, gs.show + t.effect.show);
+    if (t.effect.xiaoyan) gs.xiaoyan += t.effect.xiaoyan;
+    if (t.effect.empress) gs.empress += t.effect.empress;
+    if (t.effect.favor) gs.favor += t.effect.favor;
+    if (t.effect.moral) gs.moral = Math.min(100, gs.moral + t.effect.moral);
+    if (t.effect.kitchen) gs.xiaolizi += 5; // 简化
+  });
+
+  // 应用技能效果
+  gs.skills.forEach(sid => {
+    const s = SKILLS.find(x=>x.id===sid);
+    if (!s || !s.effect) return;
+    if (s.effect.hatred) gs.hatred = Math.max(0, gs.hatred + s.effect.hatred);
+    if (s.effect.favor) gs.favor += s.effect.favor;
+  });
+
+  // 应用背景效果
+  if (gs.background) {
+    const bg = BACKGROUNDS.find(x=>x.id===gs.background);
+    if (bg && bg.effect) {
+      if (bg.effect.xiaoyan) gs.xiaoyan += bg.effect.xiaoyan;
+      if (bg.effect.favor) gs.favor += bg.effect.favor;
+      if (bg.effect.network) gs.network += bg.effect.network;
+      if (bg.effect.xiaolizi) gs.xiaolizi += bg.effect.xiaolizi;
+    }
+    // 背景风险
+    if (gs.background === 'xiaoyan_friend') gs.hatred += 10;
+    if (gs.background === 'prophet') gs.hatred += 15;
+  }
+
+  // 剩余命点换银两
+  gs.gold += createState.points * 10;
+
+  // 初始化事件池
+  eventPool = EVENTS.filter(e => !e.day).map(e=>e.id);
+  usedEvents = new Set();
+  logLines = [`第一天，你踏入了紫禁城的大门。`];
+}
+
+// ========== 渲染状态面板 ==========
+function renderStats() {
+  const S = gs;
+  const timeNames = ['卯时（晨）','午时（午）','申时（午后）','戌时（夜）'];
+  document.getElementById('dayInfo').textContent = `第${S.day}天·${timeNames[S.timeSlot] || '卯时'}`;
+
+  function bar(val, cls) {
+    return `<div class="stat-bar"><div class="stat-fill ${cls}" style="width:${Math.max(0,Math.min(100,val))}%"></div></div>`;
+  }
+  function statRow(label, val, cls, max=100) {
+    const warn = (cls==='bar-hp'&&val<25)||(cls==='bar-hatred'&&val>75)||(cls==='bar-mood'&&val<20)||(cls==='bar-show'&&val>65)||(cls==='bar-secret'&&val>70);
+    return `<div class="stat-row">
+      <div class="stat-label"><span>${label}</span><span class="stat-val ${warn?'stat-warning':''}">${Math.round(val)}</span></div>
+      ${bar(val/max*100, cls)}
+    </div>`;
+  }
+
+  document.getElementById('stats-panel').innerHTML =
+    statRow('❤️ 生命','HP', S.hp, 'bar-hp') +
+    statRow('😊 心情','MOOD', S.mood, 'bar-mood') +
+    statRow('✨ 张扬','SHOW', S.show, 'bar-show') +
+    statRow('💛 皇上好感', S.favor, 'bar-favor') +
+    statRow('🔴 皇后恶意', S.hatred, 'bar-hatred') +
+    statRow('📖 道德', S.moral, 'bar-moral') +
+    statRow('💰 银两', S.gold, 'bar-gold', 200) +
+    statRow('🔵 人脉', S.network, 'bar-network') +
+    statRow('⚫ 秘密', S.secret, 'bar-secret');
+
+  // 修正渲染
+  const statsEl = document.getElementById('stats-panel');
+  const rows = statsEl.querySelectorAll('.stat-row');
+  const labels = ['❤️ 生命','😊 心情','✨ 张扬','💛 皇上好感','🔴 皇后恶意','📖 道德','💰 银两','🔵 人脉','⚫ 秘密'];
+  const vals = [S.hp, S.mood, S.show, S.favor, S.hatred, S.moral, S.gold, S.network, S.secret];
+  const classes = ['bar-hp','bar-mood','bar-show','bar-favor','bar-hatred','bar-moral','bar-gold','bar-network','bar-secret'];
+  const maxVals = [100,100,100,100,100,100,200,100,100];
+  let html = '';
+  for(let i=0;i<labels.length;i++){
+    const v = Math.round(vals[i]);
+    const warn = (i===0&&v<25)||(i===4&&v>75)||(i===1&&v<20)||(i===2&&v>65)||(i===8&&v>70);
+    html += `<div class="stat-row">
+      <div class="stat-label"><span>${labels[i]}</span><span class="stat-val ${warn?'stat-warning':''}">${v}</span></div>
+      <div class="stat-bar"><div class="stat-fill ${classes[i]}" style="width:${Math.max(0,Math.min(100,v/maxVals[i]*100))}%"></div></div>
+    </div>`;
+  }
+  statsEl.innerHTML = html;
+
+  // NPC
+  function hearts(v) {
+    if(v>=80) return '❤️❤️❤️';
+    if(v>=50) return '❤️❤️🤍';
+    if(v>=25) return '❤️🤍🤍';
+    return '🤍🤍🤍';
+  }
+  document.getElementById('npc-panel').innerHTML = [
+    ['皇上', S.favor], ['皇后', S.empress], ['小燕子', S.xiaoyan],
+    ['令妃', S.lingfei], ['容嬷嬷', S.rongmama], ['小李子', S.xiaolizi], ['紫薇', S.ziwei]
+  ].map(([n,v])=>`<div class="npc-row"><span class="npc-name">${n}</span><span class="npc-hearts">${hearts(v)}</span></div>`).join('');
+
+  // 状态标签
+  let tags = '';
+  if(S.hatred > 75) tags += `<span class="status-tag tag-danger">🎯 被皇后盯上</span>`;
+  if(S.favor > 70) tags += `<span class="status-tag tag-warn">⭐ 宠妃候选</span>`;
+  if(S.mood < 20) tags += `<span class="status-tag tag-danger">😰 精神不稳</span>`;
+  if(S.show > 65) tags += `<span class="status-tag tag-warn">👁 太过张扬</span>`;
+  if(S.secret > 70) tags += `<span class="status-tag tag-warn">🤫 秘密快藏不住</span>`;
+  if(S.network > 50) tags += `<span class="status-tag tag-good">🌐 宫廷红人</span>`;
+  if(S.moral === 0) tags += `<span class="status-tag tag-danger">😈 黑化</span>`;
+  if(S.moral > 85) tags += `<span class="status-tag tag-good">😇 圣母光环</span>`;
+  const factionNames = {'empress':'皇后党','xiaoyan':'小燕子帮','lingfei':'令妃阵营'};
+  if(S.faction !== 'independent') tags += `<span class="status-tag tag-good">🏰 ${factionNames[gs.faction]||gs.faction}</span>`;
+  if(!tags) tags = '<span style="color:#666;font-size:0.75rem">暂无特殊状态</span>';
+  document.getElementById('status-tags').innerHTML = tags;
+
+  // 危险光晕
+  const overlay = document.getElementById('dangerOverlay');
+  if(S.hatred > 75 || S.hp < 20 || S.secret > 85) {
+    overlay.classList.add('active');
+  } else {
+    overlay.classList.remove('active');
+  }
+}
+
+// ========== 事件系统 ==========
+function loadNextEvent() {
+  // 检查游戏结束条件
+  const endingId = checkEnding();
+  if (endingId) { showEnding(endingId); return; }
+
+  // 每天4个事件后推进到下一天
+  gs.eventsToday++;
+  if (gs.eventsToday > 4) {
+    gs.day++;
+    gs.eventsToday = 1;
+    gs.timeSlot = 0;
+    // 每日结算
+    gs.mood = Math.min(100, gs.mood + 5);
+    gs.stamina = 100;
+    // 被盯上每日额外伤害
+    if (gs.hatred > 80) { gs.hp -= 5; addLog('皇后的眼线今日给你添了麻烦…'); }
+    // 张扬自然衰减（谨小慎微）
+    if (gs.traits.includes('careful')) gs.show = Math.max(0, gs.show - 3);
+    else gs.show = Math.max(0, gs.show - 1);
+  } else {
+    gs.timeSlot = gs.eventsToday - 1;
+  }
+
+  if (gs.day > 30) { showEnding(checkFinalEnding()); return; }
+
+  // 选择事件
+  let event = null;
+  const specialId = specialDayEvents[gs.day];
+  if (specialId && !usedEvents.has(specialId)) {
+    event = EVENTS.find(e=>e.id===specialId);
+    if (event) usedEvents.add(specialId);
+  }
+
+  if (!event) {
+    // 从随机池里选
+    const available = eventPool.filter(id => !usedEvents.has(id));
+    if (available.length === 0) { usedEvents.clear(); eventPool = EVENTS.filter(e=>!e.day).map(e=>e.id); }
+    const availNow = eventPool.filter(id => !usedEvents.has(id));
+    if (availNow.length > 0) {
+      const picked = availNow[Math.floor(Math.random()*availNow.length)];
+      event = EVENTS.find(e=>e.id===picked);
+      usedEvents.add(picked);
+    }
+  }
+
+  if (!event) event = EVENTS[0]; // fallback
+  currentEvent = event;
+  eventPhase = 'show';
+  renderEvent();
+  renderStats();
+}
+
+function renderEvent() {
+  const e = currentEvent;
+  const typeMap = { special:'【特殊事件】', crisis:'【危机！】', daily:'【日常】' };
+  document.getElementById('event-type').textContent = typeMap[e.type] || '【日常】';
+  document.getElementById('event-title').textContent = e.title;
+  document.getElementById('event-text').textContent = e.text;
+
+  // 提示
+  let hints = [];
+  e.choices.forEach(c => {
+    if (c.requires) {
+      const req = c.requires;
+      if (req.skills) {
+        const hasAll = req.skills.every(s => gs.skills.includes(s) || gs.traits.includes(s));
+        if(!hasAll) hints.push(`选项含技能要求`);
+      }
+    }
+  });
+  document.getElementById('event-hint').textContent = e.hint || (hints.length?'提示：某些选项需要特定技能或性格':'');
+
+  document.getElementById('result-area').innerHTML = '';
+
+  // 渲染选项
+  let choicesHtml = '';
+  e.choices.forEach((c,i) => {
+    let locked = false, lockReason = '';
+    if (c.requires) {
+      if (c.requires.skills) {
+        const hasAll = c.requires.skills.every(s => gs.skills.includes(s) || gs.traits.includes(s));
+        if (!hasAll) { locked = true; lockReason = `需要：${c.requires.skills.join('/')}技能`; }
+      }
+      if (c.requires.traits) {
+        const hasAll = c.requires.traits.every(t => gs.traits.includes(t));
+        if (!hasAll) { locked = true; lockReason = `需要：${c.requires.traits.join('/')}性格`; }
+      }
+      if (c.requires.gold) {
+        if (gs.gold < c.requires.gold) { locked = true; lockReason = `需要${c.requires.gold}两银子（当前${gs.gold}两）`; }
+      }
+    }
+    const prefix = ['A','B','C','D'][i];
+    choicesHtml += `<button class="choice-btn ${locked?'disabled':''}" onclick="${locked?'':'makeChoice('+i+')'}">
+      【${prefix}】${c.text}
+      ${lockReason?`<span class="choice-req">🔒 ${lockReason}</span>`:''}
+    </button>`;
+  });
+  document.getElementById('choices-area').innerHTML = choicesHtml;
+}
+
+function makeChoice(idx) {
+  if (eventPhase !== 'show') return;
+  eventPhase = 'result';
+  const choice = currentEvent.choices[idx];
+
+  let success = true;
+  if (choice.successRate !== undefined) {
+    // 技能加成
+    let rate = choice.successRate;
+    if (choice.skillBonus) { /* 可扩展 */ }
+    success = Math.random() < rate;
+  }
+
+  const resultText = success
+    ? (choice.result_success || choice.result || '（选择生效）')
+    : (choice.result_fail || '（失败了）');
+
+  // 应用效果
+  const eff = choice.effects || {};
+  const changes = [];
+
+  function applyChange(key, val) {
+    if (val === undefined || val === 0) return;
+    const old = gs[key] !== undefined ? gs[key] : 0;
+    if (!success && val > 0 && choice.result_fail) {
+      // 失败时，正向效果减半或不给
+      return;
+    }
+    gs[key] = Math.max(0, Math.min(key==='gold'?9999:100, (gs[key]||0) + (success ? val : (val<0?val*1.5:0))));
+    changes.push({ key, delta: success ? val : (val<0?Math.round(val*1.5):0) });
+  }
+
+  const mapping = {
+    hp:'hp', mood:'mood', show:'show', favor:'favor', hatred:'hatred',
+    moral:'moral', gold:'gold', stamina:'stamina', secret:'secret', network:'network',
+    empress:'empress', xiaoyan:'xiaoyan', lingfei:'lingfei', rongmama:'rongmama',
+    xiaolizi:'xiaolizi', ziwei:'ziwei',
+  };
+  Object.entries(eff).forEach(([k,v]) => {
+    if (mapping[k]) applyChange(mapping[k], v);
+  });
+
+  // 特殊：失败覆盖效果
+  if (!success && choice.effects_fail) {
+    Object.entries(choice.effects_fail).forEach(([k,v]) => {
+      if (mapping[k]) gs[mapping[k]] = Math.max(0, Math.min(100, (gs[mapping[k]]||0)+v));
+    });
+  }
+
+  // 检查派系
+  if (gs.empress > 60 && gs.faction === 'independent') gs.faction = 'empress';
+  if (gs.xiaoyan > 75 && gs.faction === 'independent') gs.faction = 'xiaoyan';
+  if (gs.lingfei > 75 && gs.faction === 'independent') gs.faction = 'lingfei';
+
+  // 渲染结果
+  let effectsHtml = changes.filter(c=>c.delta!==0).map(c=>{
+    const nameMap = {hp:'生命',mood:'心情',show:'张扬',favor:'皇上好感',hatred:'皇后恶意',moral:'道德',gold:'银两',network:'人脉',secret:'秘密',empress:'皇后好感',xiaoyan:'小燕子好感',lingfei:'令妃好感',rongmama:'容嬷嬷好感',xiaolizi:'小李子好感',ziwei:'紫薇好感'};
+    const n = nameMap[c.key] || c.key;
+    const cls = c.delta > 0 ? 'effect-pos' : 'effect-neg';
+    const sign = c.delta > 0 ? '+' : '';
+    return `<span class="effect-tag ${cls}">${n} ${sign}${c.delta}</span>`;
+  }).join('');
+
+  document.getElementById('result-area').innerHTML = `
+    <div class="result-card">
+      <div class="result-title">${success ? '✓ 结果' : '✗ 失败'}</div>
+      <div class="result-text">${resultText}</div>
+      ${effectsHtml ? `<div class="result-effects">${effectsHtml}</div>` : ''}
+    </div>`;
+
+  document.getElementById('choices-area').innerHTML = `<button class="continue-btn" onclick="loadNextEvent()">继续 →</button>`;
+
+  addLog(`[第${gs.day}天] ${currentEvent.title}——${['A','B','C','D'][idx]}选项${success?'成功':'失败'}`);
+  renderStats();
+
+  // 立即检查死亡
+  const endNow = checkEnding();
+  if (endNow) {
+    setTimeout(()=>showEnding(endNow), 1500);
+  }
+}
+
+function checkEnding() {
+  if (gs.hp <= 0) return 'death_hp';
+  if (gs.hatred >= 100) return 'death_empress';
+  if (gs.mood <= 0) return 'mental_break';
+  if (gs.secret >= 100) return 'secret_exposed';
+  return null;
+}
+
+function checkFinalEnding() {
+  // 隐藏结局
+  if (gs.mood>=90 && gs.moral<=5 && gs.secret>=80 && gs.network>=75 && gs.favor>=80 && gs.hatred>=80) return 'chaos_god';
+  // 荣耀
+  if (gs.favor >= 75) return 'imperial_favor';
+  // 派系结局
+  if (gs.faction==='empress' && gs.empress>=65) return 'empress_ally';
+  if (gs.faction==='lingfei' && gs.lingfei>=75) return 'lingfei_pawn';
+  if (gs.xiaoyan>=75) return 'xiaoyan_sister';
+  if (gs.faction==='independent') return 'independent';
+  return 'normal_survive';
+}
+
+function showEnding(id) {
+  const ending = ENDINGS[id] || ENDINGS['normal_survive'];
+  document.getElementById('screen-game').style.display = 'none';
+  const endScreen = document.getElementById('screen-ending');
+  endScreen.style.display = 'flex';
+  endScreen.style.background = `radial-gradient(ellipse at center, ${ending.color}22 0%, #1a0500 70%)`;
+  document.getElementById('ending-type').textContent = ending.type;
+  document.getElementById('ending-title').textContent = ending.title;
+  document.getElementById('ending-desc').textContent = ending.desc;
+  document.getElementById('ending-stats').innerHTML = `
+    <div class="ending-stat">存活天数：第${gs.day}天</div>
+    <div class="ending-stat">❤️ 最终生命：${Math.round(gs.hp)}</div>
+    <div class="ending-stat">💛 皇上好感：${Math.round(gs.favor)}</div>
+    <div class="ending-stat">🔴 皇后恶意：${Math.round(gs.hatred)}</div>
+    <div class="ending-stat">📖 道德：${Math.round(gs.moral)}</div>
+    <div class="ending-stat">🌐 人脉：${Math.round(gs.network)}</div>
+    <div class="ending-stat">💰 剩余银两：${Math.round(gs.gold)}</div>
+  `;
+}
+
+function restartGame() {
+  createState = { points:20, origin:null, appearance:1, traits:[], skills:[], background:null };
+  document.getElementById('screen-ending').style.display = 'none';
+  document.getElementById('screen-title').style.display = 'flex';
+}
+
+function addLog(msg) {
+  logLines.unshift(msg);
+  if (logLines.length > 15) logLines.pop();
+  document.getElementById('log-area').textContent = logLines.join('\n');
+}
+
+// 修复faction显示bug
+Object.assign(window, { showCreate, startGame, makeChoice, loadNextEvent, restartGame });
+</script>
+</body>
+</html>
